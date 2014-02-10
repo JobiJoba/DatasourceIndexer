@@ -1,12 +1,5 @@
 Binaries
-ContentUsageTools.Tds.Core/BuiltFiles_Release.txt
-ContentUsageTools.Tds.Core/BuiltFiles_Debug.txt
-ContentUsageTools.Tds.Core/IconCache/
-ContentUsageTools.Tds.Master/BuiltFiles_Release.txt
-ContentUsageTools.Tds.Master/BuiltFiles_Debug.txt
-ContentUsageTools.Tds.Master/IconCache/
-Package_Release
-Release
+
 
 # Build Folders (you can keep bin if you'd like, to store dlls and pdbs)
 [Bb]in/
