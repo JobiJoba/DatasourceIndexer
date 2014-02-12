@@ -33,10 +33,10 @@ namespace DatasourceIndexer.Helpers
         public static List<Item> GetFieldsOfASublayoutItem(Item item, Database database)
         {
             List<Item> sourceField = null;
-            if (!string.IsNullOrEmpty(item[Constants.DatasourceTemplateFieldName]))
+            if (!string.IsNullOrEmpty(item[Constants.DatasourceTemplateFieldID]))
             {
                 //We get the templateId if it's set
-                var firstTemplateID = database.GetItem(item[Constants.DatasourceTemplateFieldName]).ID;
+                var firstTemplateID = database.GetItem(item[Constants.DatasourceTemplateFieldID]).ID;
                 if (!firstTemplateID.IsNull)
                 {
                     sourceField = RetrieveFieldItem(database, firstTemplateID);
@@ -85,7 +85,7 @@ namespace DatasourceIndexer.Helpers
                     // Foreach sections, we will take the field except the standard field ("__") 
                     foreach (var section in sections.Distinct(new ItemEqualityComparer()))
                     {
-                        foreach (Item fieldItem in section.Children.Where(o => !o.Name.StartsWith("__") && TextFieldTypes.Contains(o.GetType().Name)))
+                        foreach (Item fieldItem in section.Children.Where(o => !o.Name.StartsWith("__") && TextFieldTypes.Contains(o[Constants.TypeFieldID])))
                         {
                             sourceField.Add(fieldItem);
                         }

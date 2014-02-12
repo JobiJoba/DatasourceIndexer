@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using DatasourceIndexer.ComputedAbstract;
 using DatasourceIndexer.Helpers;
@@ -40,8 +41,10 @@ namespace DatasourceIndexer.ComputedField
                     if (!string.IsNullOrEmpty(renderingSettings.DataSource))
                     {
                         var renderingItem = renderingReference.RenderingItem.InnerItem;
+                        if (string.IsNullOrEmpty(renderingItem[Constants.IsIndexed])) continue;
+
                         var datasourceItem = Factory.GetDatabase("master").GetItem(renderingSettings.DataSource);
-                        string indexClass = renderingItem[Constants.IndexClassFieldName];
+                        string indexClass = renderingItem[Constants.IndexClassFieldID];
                         if (!string.IsNullOrEmpty(indexClass))
                         {
                             string assemblyName = string.Empty;
@@ -51,25 +54,34 @@ namespace DatasourceIndexer.ComputedField
                                 assemblyName = indexClass.Substring(num + 1).Trim();
                                 indexClass = indexClass.Substring(0, num).Trim();
                             }
-                            var assembly = ReflectionUtil.LoadAssembly(assemblyName);
-                            if (assembly == null) return null;
-                            Type type = assembly.GetType(indexClass, false, true);
-                            if (type == null) return null;
-                            var obj = ReflectionUtil.CreateObject(type) as DatasourceComputed;
-                            if (obj != null) datasourceIndexed += string.Format(" {0} ", obj.Run(item));
+                            try
+                            {
+                                var assembly = ReflectionUtil.LoadAssembly(assemblyName);
+                                if (assembly == null) return null;
+                                Type type = assembly.GetType(indexClass, false, true);
+                                if (type == null) return null;
+                                var obj = ReflectionUtil.CreateObject(type) as DatasourceComputed;
+                                if (obj != null) datasourceIndexed += string.Format(" {0} ", obj.Run(item));
+                            }
+                            catch (FileNotFoundException ex)
+                            {
+                                datasourceIndexed += string.Empty;
+                                Log.Warn("Assembly not found " + indexClass,ex,this);
+                            }
+                            
                         }
-                        else if (!string.IsNullOrEmpty(renderingItem[Constants.IndexAllFieldFieldName]))
+                        else if (!string.IsNullOrEmpty(renderingItem[Constants.IndexAllFieldFieldID]))
                         {
                             var listField = DatasourceIndexerHelper.GetFieldNameFromItem(datasourceItem,
                                 Factory.GetDatabase("master"));
                             datasourceIndexed = ConcatField(listField, datasourceItem);
                         }
-                        else if (!string.IsNullOrEmpty(renderingItem[Constants.MultiListFieldName]))
+                        else if (!string.IsNullOrEmpty(renderingItem[Constants.MultiListFieldID]))
                         {
                             using (new LanguageSwitcher(item.Language))
                             {
                                 var listField =
-                                    ((MultilistField)renderingItem.Fields[Constants.MultiListFieldName]).GetItems().Select(o => o.Name);
+                                    ((MultilistField)renderingItem.Fields[Constants.MultiListFieldID]).GetItems().Select(o => o.Name);
                                 datasourceIndexed = ConcatField(listField, datasourceItem);
                             }
                         }

@@ -21,22 +21,18 @@ namespace DatasourceIndexer.Pipelines
             Assert.IsNotNull(args.Dependencies, "dependencies");
             Func<ItemUri, bool> func = null;
             Item item = (Item)(args.IndexedItem as SitecoreIndexableItem);
-            
+
             if (item != null)
             {
-                // Just check for the ContentItem
-                if (item.Paths.IsContentItem)
+                if (func == null)
                 {
-                    if (func == null)
-                    {
-                        func = uri => (bool) ((uri != null) && ((bool) (uri != item.Uri)));
-                    }
-                    System.Collections.Generic.IEnumerable<ItemUri> source =
-                        Enumerable.Where<ItemUri>(
-                            from l in Globals.LinkDatabase.GetReferrers(item) select l.GetSourceItem().Uri, func)
-                            .Distinct<ItemUri>();
-                    args.Dependencies.AddRange(source.Select(x => (SitecoreItemUniqueId) x));
+                    func = uri => (bool)((uri != null) && ((bool)(uri != item.Uri)));
                 }
+                System.Collections.Generic.IEnumerable<ItemUri> source =
+                    Enumerable.Where<ItemUri>(
+                        from l in Globals.LinkDatabase.GetReferrers(item) select l.GetSourceItem().Uri, func)
+                        .Distinct<ItemUri>();
+                args.Dependencies.AddRange(source.Select(x => (SitecoreItemUniqueId)x));
             }
         }
     }

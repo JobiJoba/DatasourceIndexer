@@ -12,6 +12,9 @@ using Sitecore.Text;
 
 namespace DatasourceIndexer.Field
 {
+    /// <summary>
+    /// Multilist which take his source from the Datasource Template of a Sublayout
+    /// </summary>
     public class MultiListDatasourceField : MultilistEx
     {
 
