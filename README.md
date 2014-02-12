@@ -3,7 +3,7 @@ DatasourceIndexer
 
 ## Synopsis
 
-Modules that allow you to index your datasource item into the _content field of the referred item
+Modules that allow you to index your datasource item into the _content field of the page item
 
 ## Features
 
