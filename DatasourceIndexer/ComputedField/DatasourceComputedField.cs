@@ -23,62 +23,65 @@ namespace DatasourceIndexer.ComputedField
     {
         public object ComputeFieldValue(IIndexable indexable)
         {
+            string datasourceIndexed = string.Empty;
             Item item = (indexable as SitecoreIndexableItem);
 
             if (item == null)
                 return null;
             if (item.Paths.IsContentItem)
             {
-                string datasourceIndexed = string.Empty;
-                var renderings = item.Visualization.GetRenderings(
-                    DeviceItem.ResolveDevice(Factory.GetDatabase("master")), true);
-
-                if (!renderings.Any()) return null;
-
-                foreach (var renderingReference in renderings)
+                using (new LanguageSwitcher(item.Language))
                 {
-                    var renderingSettings = renderingReference.Settings;
-                    if (!string.IsNullOrEmpty(renderingSettings.DataSource))
-                    {
-                        var renderingItem = renderingReference.RenderingItem.InnerItem;
-                        if (string.IsNullOrEmpty(renderingItem[Constants.IsIndexed])) continue;
+                   
+                    var renderings = item.Visualization.GetRenderings(
+                        DeviceItem.ResolveDevice(Factory.GetDatabase("master")), true);
 
-                        var datasourceItem = Factory.GetDatabase("master").GetItem(renderingSettings.DataSource);
-                        string indexClass = renderingItem[Constants.IndexClassFieldID];
-                        if (!string.IsNullOrEmpty(indexClass))
+                    if (!renderings.Any()) return null;
+
+                    foreach (var renderingReference in renderings)
+                    {
+                        var renderingSettings = renderingReference.Settings;
+                        if (!string.IsNullOrEmpty(renderingSettings.DataSource))
                         {
-                            string assemblyName = string.Empty;
-                            int num = indexClass.IndexOf(',');
-                            if (num >= 0)
+
+                            var renderingItem = renderingReference.RenderingItem.InnerItem;
+
+                            if (string.IsNullOrEmpty(renderingItem[Constants.IsIndexed])) continue;
+
+                            var datasourceItem = Factory.GetDatabase("master").GetItem(renderingSettings.DataSource);
+                            string indexClass = renderingItem[Constants.IndexClassFieldID];
+                            if (!string.IsNullOrEmpty(indexClass))
                             {
-                                assemblyName = indexClass.Substring(num + 1).Trim();
-                                indexClass = indexClass.Substring(0, num).Trim();
+                                string assemblyName = string.Empty;
+                                int num = indexClass.IndexOf(',');
+                                if (num >= 0)
+                                {
+                                    assemblyName = indexClass.Substring(num + 1).Trim();
+                                    indexClass = indexClass.Substring(0, num).Trim();
+                                }
+                                try
+                                {
+                                    var assembly = ReflectionUtil.LoadAssembly(assemblyName);
+                                    if (assembly == null) return null;
+                                    Type type = assembly.GetType(indexClass, false, true);
+                                    if (type == null) return null;
+                                    var obj = ReflectionUtil.CreateObject(type) as DatasourceComputed;
+                                    if (obj != null) datasourceIndexed += string.Format(" {0} ", obj.Run(item));
+                                }
+                                catch (FileNotFoundException ex)
+                                {
+                                    datasourceIndexed += string.Empty;
+                                    Log.Warn("Assembly not found " + indexClass, ex, this);
+                                }
+
                             }
-                            try
+                            else if (!string.IsNullOrEmpty(renderingItem[Constants.IndexAllFieldFieldID]))
                             {
-                                var assembly = ReflectionUtil.LoadAssembly(assemblyName);
-                                if (assembly == null) return null;
-                                Type type = assembly.GetType(indexClass, false, true);
-                                if (type == null) return null;
-                                var obj = ReflectionUtil.CreateObject(type) as DatasourceComputed;
-                                if (obj != null) datasourceIndexed += string.Format(" {0} ", obj.Run(item));
+                                var listField = DatasourceIndexerHelper.GetFieldNameFromItem(datasourceItem,
+                                    Factory.GetDatabase("master"));
+                                datasourceIndexed = ConcatField(listField, datasourceItem);
                             }
-                            catch (FileNotFoundException ex)
-                            {
-                                datasourceIndexed += string.Empty;
-                                Log.Warn("Assembly not found " + indexClass,ex,this);
-                            }
-                            
-                        }
-                        else if (!string.IsNullOrEmpty(renderingItem[Constants.IndexAllFieldFieldID]))
-                        {
-                            var listField = DatasourceIndexerHelper.GetFieldNameFromItem(datasourceItem,
-                                Factory.GetDatabase("master"));
-                            datasourceIndexed = ConcatField(listField, datasourceItem);
-                        }
-                        else if (!string.IsNullOrEmpty(renderingItem[Constants.MultiListFieldID]))
-                        {
-                            using (new LanguageSwitcher(item.Language))
+                            else if (!string.IsNullOrEmpty(renderingItem[Constants.MultiListFieldID]))
                             {
                                 var listField =
                                     ((MultilistField)renderingItem.Fields[Constants.MultiListFieldID]).GetItems().Select(o => o.Name);
@@ -119,13 +122,17 @@ namespace DatasourceIndexer.ComputedField
 
         private string ConcatField(IEnumerable<string> fields, Item datasourceItem)
         {
+
             string datasourceIndexed = string.Empty;
-            foreach (var fieldName in fields)
+            if (datasourceItem.Versions.Count > 0)
             {
-                var field = datasourceItem.Fields[fieldName];
-                if (IsTextField(field))
+                foreach (var fieldName in fields)
                 {
-                    datasourceIndexed += string.Format(" {0} ", field.Value);
+                    var field = datasourceItem.Fields[fieldName];
+                    if (IsTextField(field))
+                    {
+                        datasourceIndexed += string.Format(" {0} ", field.Value);
+                    }
                 }
             }
             return datasourceIndexed;
