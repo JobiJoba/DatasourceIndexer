@@ -3,7 +3,9 @@ DatasourceIndexer
 
 ## Synopsis
 
-Modules that allow you to index your datasource item into the _content field of the page item
+The Datasource Indexer module extends Sitecore Content Search and allows to index the actual content of your pages and not only the items. You can then implement a true free text search on your website without needing a third party search engine to crawl your pages.
+
+This modules simply indexes the content of the items linked to the sublayouts on your web pages. Moreover it allows the developer and the end-user to fine-tune what is exactely indexed in the pages.
 
 ## Features
 
