@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using Sitecore;
 using Sitecore.ContentSearch;
 using Sitecore.ContentSearch.Pipelines.GetDependencies;
@@ -11,28 +10,22 @@ namespace DatasourceIndexer.Pipelines
 {
     /// <summary>
     /// This class will reindex the linked item if a datasource item is reindexed.
-    /// Come from : http://www.techphoria414.com/Blog/2013/November/Sitecore-7-Computed-Fields-All-Templates-and-Datasource-Content
+    /// Inspired from : http://www.techphoria414.com/Blog/2013/November/Sitecore-7-Computed-Fields-All-Templates-and-Datasource-Content
     /// </summary>
-    public class UpdateIndexDatasource : Sitecore.ContentSearch.Pipelines.GetDependencies.BaseProcessor
+    public class UpdateIndexDatasource : BaseProcessor
     {
         public override void Process(GetDependenciesArgs args)
         {
             Assert.IsNotNull(args.IndexedItem, "indexed item");
             Assert.IsNotNull(args.Dependencies, "dependencies");
-            Func<ItemUri, bool> func = null;
+            
             Item item = (Item)(args.IndexedItem as SitecoreIndexableItem);
 
-            if (item != null)
+            if (item != null && item.Paths.IsContentItem)
             {
-                if (func == null)
-                {
-                    func = uri => (bool)((uri != null) && ((bool)(uri != item.Uri)));
-                }
-                System.Collections.Generic.IEnumerable<ItemUri> source =
-                    Enumerable.Where<ItemUri>(
-                        from l in Globals.LinkDatabase.GetReferrers(item) select l.GetSourceItem().Uri, func)
-                        .Distinct<ItemUri>();
-                args.Dependencies.AddRange(source.Select(x => (SitecoreItemUniqueId)x));
+                var linkedItems = Globals.LinkDatabase.GetReferrers(item).Select(it => it.GetSourceItem()).Where(uri => uri.Uri != null && (uri.Uri != item.Uri))
+                    .Select(o => o.Uri).Distinct<ItemUri>().Select(z => (SitecoreItemUniqueId)z);
+                args.Dependencies.AddRange(linkedItems);
             }
         }
     }

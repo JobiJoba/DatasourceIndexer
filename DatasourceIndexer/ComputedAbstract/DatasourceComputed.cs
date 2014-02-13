@@ -1,4 +1,5 @@
 ﻿using Sitecore.Data.Items;
+using Sitecore.Layouts;
 
 namespace DatasourceIndexer.ComputedAbstract
 {
@@ -12,7 +13,8 @@ namespace DatasourceIndexer.ComputedAbstract
         /// Return the string that will be added to the index
         /// </summary>
         /// <param name="item"></param>
+        /// <param name="renderingSettings"></param>
         /// <returns></returns>
-        public abstract string Run(Item item);
+        public abstract string Run(Item item, RenderingSettings renderingSettings);
     }
 }
