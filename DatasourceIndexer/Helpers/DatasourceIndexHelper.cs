@@ -1,7 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using Sitecore.ContentSearch.Utilities;
 using Sitecore.Data;
 using Sitecore.Data.Items;
+using Sitecore.Diagnostics;
 
 namespace DatasourceIndexer.Helpers
 {
@@ -45,23 +47,16 @@ namespace DatasourceIndexer.Helpers
             return sourceField;
         }
 
-        /// <summary>
-        /// Return the fields displayname of a given Item
-        /// </summary>
-        /// <param name="item"></param>
-        /// <param name="database"></param>
-        /// <returns></returns>
-        public static List<string> GetFieldNameFromItem(Item item, Database database)
+       public static string GetFieldValueFromItem(Item item)
         {
-            List<string> sourceField = new List<string>();
+            Assert.IsNotNull(item, "item is null");
+            item.Fields.ReadAll();
+            string fieldValue = string.Empty;
+            var fieldsValues =
+                item.Fields.Where(f => TextFieldTypes.Contains(f.Type) && !f.Name.StartsWith("__")).Select(f => f.Value);
 
-            var firstTemplateID = item.TemplateID;
-            if (!firstTemplateID.IsNull)
-            {
-                sourceField = RetrieveFieldItem(database, firstTemplateID).Select(i => i.DisplayName).ToList();
-            }
-            return sourceField;
-        }
+            return fieldsValues.Aggregate(fieldValue, (current, fieldsValue) => current + string.Format("{0} ", fieldsValue));
+        } 
 
 
         private static List<Item> RetrieveFieldItem(Database database, ID templateId)

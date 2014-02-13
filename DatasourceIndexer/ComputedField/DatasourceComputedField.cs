@@ -7,11 +7,13 @@ using DatasourceIndexer.Helpers;
 using Sitecore.Configuration;
 using Sitecore.ContentSearch;
 using Sitecore.ContentSearch.ComputedFields;
+using Sitecore.ContentSearch.Utilities;
 using Sitecore.Data.Fields;
 using Sitecore.Data.Items;
 using Sitecore.Diagnostics;
 using Sitecore.Globalization;
 using Sitecore.Reflection;
+using Constants = DatasourceIndexer.Helpers.Constants;
 
 namespace DatasourceIndexer.ComputedField
 {
@@ -47,8 +49,15 @@ namespace DatasourceIndexer.ComputedField
                             var renderingItem = renderingReference.RenderingItem.InnerItem;
 
                             if (string.IsNullOrEmpty(renderingItem[Constants.IsIndexed])) continue;
+                            if (!renderingSettings.DataSource.IsGuid()) continue;
 
                             var datasourceItem = Factory.GetDatabase("master").GetItem(renderingSettings.DataSource);
+                            if (datasourceItem == null)
+                            {
+                                //Broken Link
+                                continue;
+                            }
+
                             string indexClass = renderingItem[Constants.IndexClassFieldID];
                             if (!string.IsNullOrEmpty(indexClass))
                             {
@@ -77,15 +86,14 @@ namespace DatasourceIndexer.ComputedField
                             }
                             else if (!string.IsNullOrEmpty(renderingItem[Constants.IndexAllFieldFieldID]))
                             {
-                                var listField = DatasourceIndexerHelper.GetFieldNameFromItem(datasourceItem,
-                                    Factory.GetDatabase("master"));
-                                datasourceIndexed = ConcatField(listField, datasourceItem);
+                                //Take all the field value of the datasource item
+                                datasourceIndexed += DatasourceIndexerHelper.GetFieldValueFromItem(datasourceItem);
                             }
                             else if (!string.IsNullOrEmpty(renderingItem[Constants.MultiListFieldID]))
                             {
                                 var listField =
                                     ((MultilistField)renderingItem.Fields[Constants.MultiListFieldID]).GetItems().Select(o => o.Name);
-                                datasourceIndexed = ConcatField(listField, datasourceItem);
+                                datasourceIndexed += ConcatField(listField, datasourceItem);
                             }
                         }
                     }

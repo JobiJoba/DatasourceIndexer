@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Web.UI;
 using DatasourceIndexer.Helpers;
 using Sitecore;
@@ -22,7 +23,7 @@ namespace DatasourceIndexer.Field
         {
             Assert.ArgumentNotNull(sources, "sources");
             ListString listString = new ListString(this.Value);
-            unselected = new System.Collections.SortedList(System.StringComparer.Ordinal);
+            unselected = new SortedList(System.StringComparer.Ordinal);
             selected = new System.Collections.ArrayList(listString.Count);
             for (int i = 0; i < listString.Count; i++)
             {
@@ -58,7 +59,7 @@ namespace DatasourceIndexer.Field
                 return;
             }
 
-            List<Item> sourceField = DatasourceIndexerHelper.GetFieldsOfASublayoutItem(item, Sitecore.Context.ContentDatabase);
+            List<Item> sourceField = DatasourceIndexerHelper.GetFieldsOfASublayoutItem(item, Sitecore.Context.ContentDatabase).ToList();
             string text = string.Empty;
 
             System.Collections.ArrayList arrayList;
