@@ -1,5 +1,9 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
+using System.Xml;
+using System.Xml.XPath;
 using Sitecore.ContentSearch.Utilities;
 using Sitecore.Data;
 using Sitecore.Data.Items;
@@ -55,9 +59,21 @@ namespace DatasourceIndexer.Helpers
             var fieldsValues =
                 item.Fields.Where(f => TextFieldTypes.Contains(f.Type) && !f.Name.StartsWith("__")).Select(f => f.Value);
 
-            return fieldsValues.Aggregate(fieldValue, (current, fieldsValue) => current + string.Format("{0} ", fieldsValue));
-        } 
+            return fieldsValues.Aggregate(fieldValue, (current, fieldsValue) => current + string.Format("{0} ", StripTags(fieldsValue)));
+        }
 
+       public static string StripTags(string markup)
+       {
+           HtmlAgilityPack.HtmlDocument doc = new HtmlAgilityPack.HtmlDocument();
+           doc.LoadHtml(markup);
+          
+           string output = string.Empty;
+           foreach (var node in doc.DocumentNode.ChildNodes)
+           {
+               output += node.InnerText;
+           }
+           return output.Replace("&nbsp;"," ").Replace("\n"," ").Trim();
+       }
 
         private static List<Item> RetrieveFieldItem(Database database, ID templateId)
         {

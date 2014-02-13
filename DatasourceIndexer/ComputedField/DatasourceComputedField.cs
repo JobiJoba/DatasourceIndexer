@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Xml;
+using System.Xml.XPath;
 using DatasourceIndexer.ComputedAbstract;
 using DatasourceIndexer.Helpers;
 using Sitecore.Configuration;
@@ -118,13 +120,14 @@ namespace DatasourceIndexer.ComputedField
                     var field = datasourceItem.Fields[fieldName];
                     if (IsTextField(field))
                     {
-                        datasourceIndexed += string.Format(" {0} ", field.Value);
+                        datasourceIndexed += string.Format(" {0} ", DatasourceIndexerHelper.StripTags(field.Value));
                     }
                 }
             }
             return datasourceIndexed;
         }
 
+        
 
         public string FieldName { get; set; }
         public string ReturnType { get; set; }
