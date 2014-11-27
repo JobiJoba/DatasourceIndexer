@@ -25,6 +25,7 @@ namespace DatasourceIndexer.Pipelines
             {
                 var linkedItems = Globals.LinkDatabase.GetReferrers(item).Select(it => it.GetSourceItem()).Where(uri => uri.Uri != null && (uri.Uri != item.Uri))
                     .Select(o => o.Uri).Distinct<ItemUri>().Select(z => (SitecoreItemUniqueId)z);
+
                 args.Dependencies.AddRange(linkedItems);
             }
         }

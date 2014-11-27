@@ -29,16 +29,17 @@ namespace DatasourceIndexer.ComputedField
         {
             string datasourceIndexed = string.Empty;
             Item item = (indexable as SitecoreIndexableItem);
-
+            
             if (item == null)
                 return null;
+            var itemDatabase = item.Database;
             if (item.Paths.IsContentItem)
             {
                 using (new LanguageSwitcher(item.Language))
                 {
 
                     var renderings = item.Visualization.GetRenderings(
-                        DeviceItem.ResolveDevice(Factory.GetDatabase("master")), true);
+                        DeviceItem.ResolveDevice(itemDatabase), true);
 
                     if (!renderings.Any()) return null;
 
@@ -53,7 +54,7 @@ namespace DatasourceIndexer.ComputedField
                             if (string.IsNullOrEmpty(renderingItem[Constants.IsIndexed])) continue;
                             if (!renderingSettings.DataSource.IsGuid()) continue;
 
-                            var datasourceItem = Factory.GetDatabase("master").GetItem(renderingSettings.DataSource);
+                            var datasourceItem = itemDatabase.GetItem(renderingSettings.DataSource);
                             if (datasourceItem == null)
                             {
                                 //Broken Link
@@ -102,11 +103,7 @@ namespace DatasourceIndexer.ComputedField
                 }
                 return datasourceIndexed;
             }
-            else
-            {
-                MediaItemContentExtractor m = new MediaItemContentExtractor();
-                return m.ComputeFieldValue(indexable);
-            }
+            return string.Empty;
         }
 
         private string ConcatField(IEnumerable<string> fields, Item datasourceItem)
