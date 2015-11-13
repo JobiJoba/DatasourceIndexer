@@ -19,6 +19,7 @@
     <IISExpressAnonymousAuthentication />
     <IISExpressWindowsAuthentication />
     <IISExpressUseClassicPipelineMode />
+    <UseGlobalApplicationHostFile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -40,17 +41,17 @@
   <ItemGroup>
     <Reference Include="HtmlAgilityPack, Version=1.4.6.0, Culture=neutral, PublicKeyToken=bd319b19eaf3b43a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Binaries\HtmlAgilityPack.dll</HintPath>
+      <HintPath>..\..\..\..\inetpub\wwwroot\sc81rev151003\Website\bin\HtmlAgilityPack.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Sitecore.Buckets">
-      <HintPath>..\Binaries\Sitecore.Buckets.dll</HintPath>
+      <HintPath>..\..\..\..\inetpub\wwwroot\sc81rev151003\Website\bin\Sitecore.Buckets.dll</HintPath>
     </Reference>
     <Reference Include="Sitecore.ContentSearch">
-      <HintPath>..\Binaries\Sitecore.ContentSearch.dll</HintPath>
+      <HintPath>..\..\..\..\inetpub\wwwroot\sc81rev151003\Website\bin\Sitecore.ContentSearch.dll</HintPath>
     </Reference>
     <Reference Include="Sitecore.Kernel">
-      <HintPath>..\Binaries\Sitecore.Kernel.dll</HintPath>
+      <HintPath>..\..\..\..\inetpub\wwwroot\sc81rev151003\Website\bin\Sitecore.Kernel.dll</HintPath>
     </Reference>
     <Reference Include="System.Web.DynamicData" />
     <Reference Include="System.Web.Entity" />
@@ -80,10 +81,12 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="App_Config\Include\zDatasourceIndexer.config" />
+    <Content Include="App_Config\Include\DatasourceIndexer\DatasourceIndexer.config" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="App_Config\Include\DatasourceIndexer\DatasourceIndexer.sc8.config.example" />
     <None Include="Properties\PublishProfiles\Profile.pubxml" />
+    <None Include="Properties\PublishProfiles\publish-profile.pubxml" />
   </ItemGroup>
   <PropertyGroup>
     <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>

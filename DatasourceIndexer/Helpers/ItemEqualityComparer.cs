@@ -6,7 +6,7 @@ namespace DatasourceIndexer.Helpers
     /// <summary>
     /// Compares two Sitecore items. (Coming from Content Usage Tools Module : http://marketplace.sitecore.net/en/Modules/Sitecore_Content_Usage_Tools.aspx )
     /// </summary>
-    public class ItemEqualityComparer : IEqualityComparer<Item>
+    internal class ItemEqualityComparer : IEqualityComparer<Item>
     {
         /// <summary>
         /// Determines whether the specified objects are equal.

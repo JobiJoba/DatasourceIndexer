@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 14
+VisualStudioVersion = 14.0.23107.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DatasourceIndexer", "DatasourceIndexer\DatasourceIndexer.csproj", "{8C1C5361-F6D0-4C90-8A68-C4B139AC3430}"
 EndProject
 Global
