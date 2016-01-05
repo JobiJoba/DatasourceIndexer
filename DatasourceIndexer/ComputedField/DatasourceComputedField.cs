@@ -1,12 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Xml;
-using System.Xml.XPath;
 using DatasourceIndexer.ComputedAbstract;
 using DatasourceIndexer.Helpers;
-using Sitecore.Configuration;
 using Sitecore.ContentSearch;
 using Sitecore.ContentSearch.ComputedFields;
 using Sitecore.ContentSearch.Utilities;
@@ -27,94 +23,106 @@ namespace DatasourceIndexer.ComputedField
     {
         public object ComputeFieldValue(IIndexable indexable)
         {
-            string datasourceIndexed = string.Empty;
+            var datasourceIndexed = string.Empty;
             Item item = (indexable as SitecoreIndexableItem);
             
             if (item == null)
                 return null;
             var itemDatabase = item.Database;
-            if (item.Paths.IsContentItem)
+
+            if (!item.Paths.IsContentItem) return string.Empty;
+
+            using (new LanguageSwitcher(item.Language))
             {
-                using (new LanguageSwitcher(item.Language))
+
+                var renderings = item.Visualization.GetRenderings(
+                    DeviceItem.ResolveDevice(itemDatabase), true);
+
+                if (!renderings.Any()) return null;
+
+                foreach (var renderingReference in renderings)
                 {
+                    var renderingSettings = renderingReference.Settings;
 
-                    var renderings = item.Visualization.GetRenderings(
-                        DeviceItem.ResolveDevice(itemDatabase), true);
+                    // If no datasource, continue
+                    if (string.IsNullOrEmpty(renderingSettings.DataSource))
+                        continue;
 
-                    if (!renderings.Any()) return null;
+                    var renderingItem = renderingReference.RenderingItem.InnerItem;
 
-                    foreach (var renderingReference in renderings)
+                    if (string.IsNullOrEmpty(renderingItem[Constants.IsIndexed])) continue;
+                    if (!renderingSettings.DataSource.IsGuid()) continue;
+
+                    var datasourceItem = itemDatabase.GetItem(renderingSettings.DataSource);
+                    if (datasourceItem == null)
                     {
-                        var renderingSettings = renderingReference.Settings;
+                        //Broken Link
+                        continue;
+                    }
 
-                        if (!string.IsNullOrEmpty(renderingSettings.DataSource))
+                    string indexClass = renderingItem[Constants.IndexClassFieldID];
+
+                    if (!string.IsNullOrEmpty(indexClass))
+                    {
+                        var assemblyName = string.Empty;
+                        var num = indexClass.IndexOf(',');
+
+                        if (num >= 0)
                         {
-                            var renderingItem = renderingReference.RenderingItem.InnerItem;
-
-                            if (string.IsNullOrEmpty(renderingItem[Constants.IsIndexed])) continue;
-                            if (!renderingSettings.DataSource.IsGuid()) continue;
-
-                            var datasourceItem = itemDatabase.GetItem(renderingSettings.DataSource);
-                            if (datasourceItem == null)
-                            {
-                                //Broken Link
-                                continue;
-                            }
-
-                            string indexClass = renderingItem[Constants.IndexClassFieldID];
-                            if (!string.IsNullOrEmpty(indexClass))
-                            {
-                                string assemblyName = string.Empty;
-                                int num = indexClass.IndexOf(',');
-                                if (num >= 0)
-                                {
-                                    assemblyName = indexClass.Substring(num + 1).Trim();
-                                    indexClass = indexClass.Substring(0, num).Trim();
-                                }
-                                try
-                                {
-                                    var assembly = ReflectionUtil.LoadAssembly(assemblyName);
-                                    if (assembly == null) return null;
-                                    Type type = assembly.GetType(indexClass, false, true);
-                                    if (type == null) return null;
-                                    var obj = ReflectionUtil.CreateObject(type) as DatasourceComputed;
-                                    if (obj != null) datasourceIndexed += string.Format(" {0} ", obj.Run(item, renderingSettings));
-                                }
-                                catch (FileNotFoundException ex)
-                                {
-                                    datasourceIndexed += string.Empty;
-                                    Log.Warn("Assembly not found " + indexClass, ex, this);
-                                }
-
-                            }
-                            else if (!string.IsNullOrEmpty(renderingItem[Constants.IndexAllFieldFieldID]))
-                            {
-                                //Take all the field value of the datasource item
-                                datasourceIndexed += DatasourceIndexerHelper.GetFieldValueFromItem(datasourceItem);
-                            }
-                            else if (!string.IsNullOrEmpty(renderingItem[Constants.MultiListFieldID]))
-                            {
-                                var listField =
-                                    ((MultilistField)renderingItem.Fields[Constants.MultiListFieldID]).GetItems().Select(o => o.Name);
-                                datasourceIndexed += ConcatField(listField, datasourceItem);
-                            }
+                            assemblyName = indexClass.Substring(num + 1).Trim();
+                            indexClass = indexClass.Substring(0, num).Trim();
                         }
+                        try
+                        {
+                            var assembly = ReflectionUtil.LoadAssembly(assemblyName);
+                            var type = assembly?.GetType(indexClass, false, true);
+
+                            if (type == null)
+                                return null;
+
+                            var obj = ReflectionUtil.CreateObject(type) as DatasourceComputed;
+
+                            if (obj != null)
+                                datasourceIndexed += string.Format(" {0} ", obj.Run(item, renderingSettings));
+                        }
+                        catch (FileNotFoundException ex)
+                        {
+                            datasourceIndexed += string.Empty;
+                            Log.Warn("Assembly not found " + indexClass, ex, this);
+                        }
+
+                        if (renderingItem[Constants.AppendFieldsToIndexClassFieldID] != "1")
+                            return datasourceIndexed;
+                    }
+
+
+                    if (!string.IsNullOrEmpty(renderingItem[Constants.IndexAllFieldFieldID]))
+                    {
+                        //Take all the field value of the datasource item
+                        datasourceIndexed += DatasourceIndexerHelper.GetFieldValueFromItem(datasourceItem);
+                    }
+                    else if (!string.IsNullOrEmpty(renderingItem[Constants.MultiListFieldID]))
+                    {
+                        var listField =
+                            ((MultilistField)renderingItem.Fields[Constants.MultiListFieldID]).GetItems().Select(o => o.Name);
+                        datasourceIndexed += ConcatField(listField, datasourceItem);
                     }
                 }
-                return datasourceIndexed;
             }
-            return string.Empty;
+
+            return datasourceIndexed;
         }
 
         private string ConcatField(IEnumerable<string> fields, Item datasourceItem)
         {
 
-            string datasourceIndexed = string.Empty;
+            var datasourceIndexed = string.Empty;
             if (datasourceItem.Versions.Count > 0)
             {
                 foreach (var fieldName in fields)
                 {
                     var field = datasourceItem.Fields[fieldName];
+
                     if (IsTextField(field))
                     {
                         datasourceIndexed += string.Format(" {0} ", DatasourceIndexerHelper.StripTags(field.Value));
@@ -127,6 +135,7 @@ namespace DatasourceIndexer.ComputedField
         
 
         public string FieldName { get; set; }
+
         public string ReturnType { get; set; }
 
         public bool IsTextField(Sitecore.Data.Fields.Field field)

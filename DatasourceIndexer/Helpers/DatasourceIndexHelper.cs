@@ -1,17 +1,12 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
-using System.Xml;
-using System.Xml.XPath;
-using Sitecore.ContentSearch.Utilities;
 using Sitecore.Data;
 using Sitecore.Data.Items;
 using Sitecore.Diagnostics;
 
 namespace DatasourceIndexer.Helpers
 {
-    public static class DatasourceIndexerHelper
+    internal static class DatasourceIndexerHelper
     {
         /// <summary>
         /// Coming from http://www.techphoria414.com/Blog/2013/November/Sitecore-7-Computed-Fields-All-Templates-and-Datasource-Content, 
@@ -39,15 +34,17 @@ namespace DatasourceIndexer.Helpers
         public static List<Item> GetFieldsOfASublayoutItem(Item item, Database database)
         {
             List<Item> sourceField = null;
-            if (!string.IsNullOrEmpty(item[Constants.DatasourceTemplateFieldID]))
+            if (string.IsNullOrEmpty(item[Constants.DatasourceTemplateFieldID]))
+                return null;
+
+            //We get the templateId if it's set
+            var firstTemplateID = database.GetItem(item[Constants.DatasourceTemplateFieldID]).ID;
+
+            if (!firstTemplateID.IsNull)
             {
-                //We get the templateId if it's set
-                var firstTemplateID = database.GetItem(item[Constants.DatasourceTemplateFieldID]).ID;
-                if (!firstTemplateID.IsNull)
-                {
-                    sourceField = RetrieveFieldItem(database, firstTemplateID);
-                }
+                sourceField = RetrieveFieldItem(database, firstTemplateID);
             }
+
             return sourceField;
         }
 
@@ -55,32 +52,32 @@ namespace DatasourceIndexer.Helpers
         {
             Assert.IsNotNull(item, "item is null");
             item.Fields.ReadAll();
-            string fieldValue = string.Empty;
+            var fieldValue = string.Empty;
+
             var fieldsValues =
                 item.Fields.Where(f => TextFieldTypes.Contains(f.Type) && !f.Name.StartsWith("__")).Select(f => f.Value);
 
-            return fieldsValues.Aggregate(fieldValue, (current, fieldsValue) => current + string.Format("{0} ", StripTags(fieldsValue)));
+            return fieldsValues.Aggregate(fieldValue, (current, fieldsValue) => current + $"{StripTags(fieldsValue)} ");
         }
 
        public static string StripTags(string markup)
        {
-           HtmlAgilityPack.HtmlDocument doc = new HtmlAgilityPack.HtmlDocument();
+           var doc = new HtmlAgilityPack.HtmlDocument();
            doc.LoadHtml(markup);
           
-           string output = string.Empty;
-           foreach (var node in doc.DocumentNode.ChildNodes)
-           {
-               output += node.InnerText;
-           }
+           var output = doc.DocumentNode.ChildNodes.Aggregate(string.Empty, (current, node) => current + node.InnerText);
+
            return output.Replace("&nbsp;"," ").Replace("\n"," ").Trim();
        }
 
         private static List<Item> RetrieveFieldItem(Database database, ID templateId)
         {
-            List<Item> sourceField = new List<Item>();
-            List<TemplateItem> templateItems = new List<TemplateItem>();
-            // We retrieve him as a TemplateItem
+            var sourceField = new List<Item>();
+            var templateItems = new List<TemplateItem>();
+
+            // We retrieve it as a TemplateItem
             var firstTemplate = database.GetTemplate(templateId);
+
             if (firstTemplate != null)
             {
                 // We add to the list the firstTemplate and his BaseTemplate to retrieve all the field.
@@ -93,6 +90,7 @@ namespace DatasourceIndexer.Helpers
                     var sections =
                         template.Children.Where(
                             o => o.TemplateID.Equals(Constants.TemplateSectionsID));
+
                     // Foreach sections, we will take the field except the standard field ("__") 
                     foreach (var section in sections.Distinct(new ItemEqualityComparer()))
                     {
@@ -103,6 +101,7 @@ namespace DatasourceIndexer.Helpers
                     }
                 }
             }
+
             return sourceField;
         } 
 
